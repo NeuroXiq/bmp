@@ -2,22 +2,59 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "bmp.c"
+#include "bmp.h"
+#include "bmp_editor.c"
 
 int show_info_header(BITMAP*);
 int show_dib_header(BITMAP*);
+int* create_color_palette();
+int show_info(BITMAP *b);
 
+#define BPP 2
 
 int main(int argc,char *argv[])
-{
-	BITMAP *b = bmp_create_standard_bitmap(100,100,atoi(argv[1]));
+{	
+	BITMAP *b = bmp_editor_create_bitmap(0x10,0x10,BPP,create_color_palette(BPP));
 	
 	char *path = "C:\\Users\\Marek\\Desktop\\test.bmp";
-	bmp_save_bitmap(b,path);
+	bmp_editor_save_bitmap(b,path);
 	
 	return 0;
 }
 
+int show_info(BITMAP *b)
+{
+	puts("INFOHEADER:");
+	show_info_header(b);
+	puts("DIBHEADER:");
+	show_dib_header(b);
+	return 0;
+}
+
+int* create_color_palette(int bpp)
+{
+	if(bpp == 1)
+	{
+		int *r = malloc(8);
+		*r =   0x00000000;
+		r[1] = 0xffffffff;
+		return r;
+	}
+	
+	int full_size = (1 << bpp) * 4;
+	int *palette = malloc(full_size);
+	int i = 0;
+	for(i; i< full_size / 4; i += 2)
+	{
+		//COLORPAL
+		palette[i] = ('O' << 24) + ('L' << 16) + ('O' << 8) + 'C';
+		palette[i+1] =('L' << 24) + ('A' << 16) + ('P' << 8)  + 'R'  ;
+		//palette[i] = (i<<24) + (i<<16) + (i<<8) + (i);
+		//palette[i+1] = 0xCC;
+ 	}
+	
+	return palette;
+}
 
 /*
 BITMAP *b = bmp_load_bitmap("C:\\Users\\Marek\\Desktop\\Untitled.bmp");

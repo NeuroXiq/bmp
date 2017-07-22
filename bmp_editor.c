@@ -1,4 +1,4 @@
-#include "bmp.h"
+#include "bmp_editor.h"
 
 BITMAP* bmp_load_bitmap(char *file_path)
 {
@@ -62,8 +62,7 @@ BITMAP* bmp_load_bitmap(char *file_path)
 
 	return bmp;
 }
-
-int bmp_save_bitmap(BITMAP *b, char *path)
+int bmp_editor_save_bitmap(BITMAP *b, char *path)
 {
 	FILE *f = fopen(path, "wb");
 	
@@ -109,7 +108,6 @@ int bmp_save_bitmap(BITMAP *b, char *path)
 	
 	return 0;
 }
-
 int bmp_get_file_size(FILE *f)
 {
 	fseek(f,0L,SEEK_END);
@@ -119,99 +117,87 @@ int bmp_get_file_size(FILE *f)
 	return file_size;
 }
 
-BITMAP* bmp_create_standard_bitmap(unsigned int width, unsigned int height, unsigned short bpp)
+BITMAP* bmp_editor_create_bitmap(unsigned int width, unsigned int height, unsigned short bpp, int *color_palette)
 {
-	BITMAP *bmp = malloc(sizeof(BITMAP));
-	BITMAPINFOHEADER *dib = &bmp->dib_header;
-	BITMAPFILEHEADER *fh = &bmp->file_header;
-	
-	/* HEADERS */
-	fh->header_field[0] = 'B';
-	fh->header_field[1] = 'M';
-	fh->size = (ROW_SIZE(width,bpp) * height) + BMP_FILE_HEADER_SIZE + DIB_HEADER_SIZE;
-	fh->offset = DIB_HEADER_SIZE + BMP_FILE_HEADER_SIZE;
-	
-	dib->header_size = DIB_HEADER_SIZE;
-	dib->width = width;	
-	dib->height = height;
-	dib->color_planes = 1;
-	dib->bpp = bpp;
-	dib->compression_method = BI_RGB;
-	dib->image_size = (ROW_SIZE(width,bpp) * height);
-	dib->horizontal_resolution = width;
-	dib->vertical_resolution = height;
-	dib->number_of_colors = 0;
-	dib->important_color_used = 0;
-	
-	//bmp->pixels = calloc((ROW_SIZE(width,bpp) * height),1);
-	bmp->pixels = malloc((ROW_SIZE(width,bpp) * height));
-	
-	return bmp;
-}
-
-BITMAP* bmp_create_bitmap_with_color_palette(unsigned int width, unsigned int height, int *color_palette,int bpp)
-{
-	if((bpp != 8 ) && (bpp != 4 ) && (bpp != 2 ) && (bpp != 1 ))
+	unsigned int color_palette_colors_count = bmp_editor_colors_count_in_color_palette(bpp);
+	if(color_palette_colors_count < 0) // wrong bpp
 		return NULL;
 	
-	int colors_count = get_colors_count_in_palette(bpp);
-	int color_palette_size = 4 * colors_count;
-	
 	BITMAP *bmp = malloc(sizeof(BITMAP));
 	BITMAPINFOHEADER *dib = &bmp->dib_header;
 	BITMAPFILEHEADER *fh = &bmp->file_header;
 	
-	unsigned int pixel_array_size = (ROW_SIZE(width,bpp) * height);
-	unsigned int pixel_array_offset = 
-	BMP_FILE_HEADER_SIZE + DIB_HEADER_SIZE + color_palette_size;
+	unsigned int pixel_offset = 
+	BMP_FILE_HEADER_SIZE +
+	DIB_HEADER_SIZE + 
+	(color_palette_colors_count * 4);
 	
-	//File header
-	fh->header_field[0] = 'B';
+	unsigned int pixel_array_size = ROW_SIZE(width,bpp) * height;
+	
+	/* FILE HEADER */
+	fh->header_field[0] = 'B'; 
 	fh->header_field[1] = 'M';
-	fh->size = pixel_array_size + BMP_FILE_HEADER_SIZE + DIB_HEADER_SIZE + color_palette_size;
-	fh->offset = pixel_array_offset;
+	fh->size = pixel_array_size + pixel_offset;
+	bmp_editor_fill_reserved_bytes(fh);
+	fh->offset = pixel_offset;
 	
-	//dib header
-	dib->header_size = DIB_HEADER_SIZE;
+	/* DIB HEADER */
+	dib->header_size =  DIB_HEADER_SIZE;
 	dib->width = width;
 	dib->height = height;
-	dib->color_planes = 1;
+	dib->color_planes = 1; // must be 1, definition
 	dib->bpp = bpp;
-	dib->compression_method = BI_RGB; // no compression
-	dib->image_size = pixel_array_size;
-	dib->horizontal_resolution = width;
-	dib->vertical_resolution = height;
-	dib->number_of_colors = colors_count;
-	dib->important_color_used = colors_count; // probably everybody ignore this field
+	dib->compression_method = BI_RGB; //No compression
+	dib->image_size = ROW_SIZE(width, bpp) * height;
+	dib->horizontal_resolution = 0; //width;
+	dib->vertical_resolution = 0; //height;
+	dib->number_of_colors = color_palette_colors_count;
+	dib->important_color_used = color_palette_colors_count;
 	
-	
-	//bitmap
 	bmp->colors_palette = (char*)color_palette;
-	bmp->pixels = malloc(pixel_array_size);
+	bmp->pixels = calloc(dib->image_size, 1);
+	
+	memset(bmp->pixels,0xCC,dib->image_size);
+	
+	if(bmp->pixels == NULL)
+		return NULL; //alloc fail
+	
 	
 	return bmp;
 }
 
-unsigned int get_colors_count_in_palette(int bpp)
+int bmp_editor_fill_reserved_bytes(BITMAPFILEHEADER *fh)
 {
-	int size = 0;
+	if(fh == NULL)
+		return 0;
+	
+	fh->RESERVED_0 = ('x' << 8) + 'N'; 
+	fh->RESERVED_1 = ('q' << 8) + 'i'; 
+
+	return 0;
+}
+
+unsigned int bmp_editor_colors_count_in_color_palette(unsigned short bpp)
+{
+	unsigned int count = -1;
+	
 	switch(bpp)
 	{
-		case 8:
-		size = 256;
-		break;
-		case 4:
-		size = 16;
-		break;
+		case 1:
+		count = 2; break;
 		case 2:
-		size = 4;
-		break;
-		case 1: 
-		size = 2;
-		break;
+		count = 4; break;
+		case 4:
+		count = 16; break;
+		case 8:
+		count = 256; break;
+		case 16:
+		case 32:
+		count = 0; break;
 		default:
-		size = -1;
+		count = -1;
 		break;
 	}
-	return size;
+	
+	return count;
 }

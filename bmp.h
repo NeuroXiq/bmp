@@ -1,10 +1,6 @@
 #ifndef __BMPLIB_H__
 #define __BMPLIB_H__
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdio.h>
-
 #define ROW_SIZE(width, bpp)\
 		(unsigned int)\
 		((((width * bpp) + 31)/32)  * 4 )
@@ -62,9 +58,6 @@ typedef struct BITMAP
 	
 } BITMAP;
 
-BITMAP* bmp_load_bitmap(char *file_name);
-int bmp_get_file_size(FILE* f);
-int bmp_save_bitmap(BITMAP *f, char *path);
-BITMAP* bmp_create_standard_bitmap(unsigned int width, unsigned int height, unsigned short bpp);
+
 
 #endif
