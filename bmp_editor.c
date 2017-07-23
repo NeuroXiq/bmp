@@ -157,7 +157,6 @@ BITMAP* bmp_editor_create_bitmap(unsigned int width, unsigned int height, unsign
 	bmp->colors_palette = (char*)color_palette;
 	bmp->pixels = calloc(dib->image_size, 1);
 	
-	memset(bmp->pixels,0xCC,dib->image_size);
 	
 	if(bmp->pixels == NULL)
 		return NULL; //alloc fail
@@ -200,4 +199,63 @@ unsigned int bmp_editor_colors_count_in_color_palette(unsigned short bpp)
 	}
 	
 	return count;
+}
+
+int bmp_editor_set_32bpp_pixel(BITMAP *bmp,
+unsigned int x, unsigned int y, 
+unsigned char r, unsigned char g, 
+unsigned char b, unsigned char a )
+{
+	BITMAPINFOHEADER *dib = &bmp->dib_header;
+	
+	if((x > dib->width - 1) || (y > dib->height - 1))
+		return 0;
+	
+	unsigned int index = 
+	((dib->height - y - 1) * dib->width) + //Y PARAM
+	(x);
+	
+	bmp->pixels[(index * 4)    ] =  a;
+	bmp->pixels[(index * 4) + 1] =  b;
+	bmp->pixels[(index * 4) + 2] =  g;
+	bmp->pixels[(index * 4) + 3] =  r;
+	
+	return 1;
+}
+
+int bmp_editor_set_24bpp_pixel(BITMAP *bmp, 
+unsigned int x, unsigned int y,
+unsigned char r, unsigned char g, unsigned char b)
+{
+	
+}
+
+int bmp_editor_set_16bpp_pixel(BITMAP *bmp,
+unsigned int x, unsigned int y, unsigned int color_index)
+{
+	
+}
+
+int bmp_editor_set_8bpp_pixel(BITMAP *bmp,
+unsigned int x, unsigned int y, unsigned int color_index)
+{
+	
+}
+
+int bmp_editor_set_4bpp_pixel(BITMAP *bmp,
+unsigned int x, unsigned int y, unsigned int color_index)
+{
+	
+}
+
+int bmp_editor_set_2bpp_pixel(BITMAP *bmp,
+unsigned int x, unsigned int y, unsigned int color_index)
+{
+	
+}
+
+int bmp_editor_set_1bpp_pixel(BITMAP *bmp,
+unsigned int x, unsigned int y, unsigned int set_value)
+{
+	
 }

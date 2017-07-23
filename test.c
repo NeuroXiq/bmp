@@ -10,11 +10,21 @@ int show_dib_header(BITMAP*);
 int* create_color_palette();
 int show_info(BITMAP *b);
 
-#define BPP 2
+#define BPP 32
 
 int main(int argc,char *argv[])
 {	
-	BITMAP *b = bmp_editor_create_bitmap(0x10,0x10,BPP,create_color_palette(BPP));
+	BITMAP *b = bmp_editor_create_bitmap(10,10,BPP,create_color_palette(BPP));
+	
+	
+	for(int i = 0;i<10;i++)
+	{
+		bmp_editor_set_32bpp_pixel(b, i,1,222,222,222,111);	
+	
+	}
+		bmp_editor_set_32bpp_pixel(b, 9,2,222,222,222,111);	
+		bmp_editor_set_32bpp_pixel(b, 9,9,222,222,222,111);	
+	
 	
 	char *path = "C:\\Users\\Marek\\Desktop\\test.bmp";
 	bmp_editor_save_bitmap(b,path);
